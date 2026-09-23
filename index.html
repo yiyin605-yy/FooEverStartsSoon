@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Groom's team Million Singer</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Arial,"Microsoft YaHei",sans-serif;
+  background:linear-gradient(135deg,#fff7f8,#fff);
+  color:#4a3a3a;
+}
+body.modal-open{overflow:hidden}
+.container{max-width:1100px;margin:auto;padding:28px 18px 50px}
+h1{text-align:center;color:#b76e79;margin:0 0 6px;font-size:32px}
+.subtitle{text-align:center;color:#8a7373;margin-bottom:22px}
+
+.help-tools{
+  display:flex;flex-wrap:wrap;justify-content:center;gap:12px;
+  margin:0 auto 22px;
+}
+.help-btn{
+  border:1px solid #d7a7ad;background:#fff7f8;color:#a85f6a;
+  border-radius:12px;padding:13px 24px;font-weight:700;cursor:pointer;
+  font-size:17px;min-width:150px;
+}
+.help-btn:hover{background:#f3dce0}
+.help-btn.used{display:none}
+
+.songs{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:16px;margin-bottom:22px;
+}
+.song-wrap{display:flex;flex-direction:column;gap:5px}
+.song-btn{
+  width:100%;border:1px solid #e7cdd1;background:#fff;border-radius:16px;
+  padding:25px 14px;min-height:88px;cursor:pointer;font-size:19px;
+  font-weight:700;color:#604c4c;transition:.15s;
+}
+.song-btn:hover,.song-btn.active{
+  background:#f8e3e6;border-color:#c98b95;
+  transform:translateY(-1px);
+}
+.song-artist-hint{
+  display:none;text-align:center;font-size:15px;color:#a85f6a;
+  font-weight:700;min-height:20px;
+}
+.song-artist-hint.show{display:block}
+
+.card{
+  background:#fff;border-radius:18px;padding:22px;margin-bottom:18px;
+  box-shadow:0 6px 22px rgba(120,80,80,.08);
+}
+.song-title{font-size:24px;font-weight:700;color:#a85f6a;margin-bottom:4px}
+#player{width:100%;max-width:800px;aspect-ratio:16/9;margin:0 auto 16px}
+iframe{width:100%;height:100%;border:0;border-radius:12px}
+#status{text-align:center;margin-top:10px;min-height:26px;font-weight:700}
+.warning{
+  background:#fff4d9;color:#805f18;padding:12px;border-radius:10px;
+  margin-bottom:14px;
+}
+.prompt{font-size:21px;font-weight:700;margin-bottom:12px}
+input{
+  width:100%;padding:13px;border:1px solid #dbc6c9;border-radius:10px;
+  font-size:16px;margin-bottom:10px;
+}
+.controls{display:flex;justify-content:center}
+button.action{
+  border:0;border-radius:10px;padding:12px 24px;cursor:pointer;
+  background:#b76e79;color:white;font-weight:700;font-size:16px;
+}
+button.action:disabled{background:#ccc;cursor:not-allowed}
+.answer{
+  display:none;margin-top:12px;padding:14px;background:#eef8ee;
+  border-radius:10px;color:#35623b;line-height:1.6;
+}
+
+/* ===== 全屏求助弹层 ===== */
+.overlay{
+  position:fixed;inset:0;z-index:9999;
+  display:none;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.72);
+  padding:30px;
+}
+.overlay.show{display:flex}
+.outside-modal{
+  width:min(900px,92vw);
+  display:flex;flex-direction:column;gap:28px;
+  align-items:center;
+}
+.outside-choice{
+  width:min(780px,86vw);
+  min-height:170px;
+  border:0;border-radius:28px;
+  background:#fff;
+  box-shadow:0 14px 40px rgba(0,0,0,.3);
+  color:#6a4d52;
+  font-size:42px;font-weight:800;
+  cursor:pointer;
+  animation:flyIn .42s ease both;
+}
+.outside-choice:nth-child(2){animation-delay:.12s}
+.outside-choice:hover{transform:scale(1.02)}
+@keyframes flyIn{
+  from{opacity:0;transform:translateY(80px) scale(.82)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+.modal-note{
+  color:#fff;font-size:17px;text-align:center;opacity:.9;
+}
+
+/* ===== 红包弹层 ===== */
+.redpacket-modal{
+  position:relative;
+  width:min(60vw,650px);
+  height:min(60vh,650px);
+  min-width:320px;min-height:360px;
+  display:flex;align-items:center;justify-content:center;
+}
+.redpacket{
+  position:relative;
+  width:78%;height:82%;
+  background:linear-gradient(145deg,#d7193f,#b40028);
+  border-radius:20px;
+  box-shadow:0 22px 60px rgba(0,0,0,.38);
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+  animation:packetIn .45s cubic-bezier(.2,.9,.2,1.2);
+}
+.redpacket:before{
+  content:"";
+  position:absolute;left:-8%;right:-8%;top:28%;
+  height:46%;
+  background:rgba(255,215,0,.14);
+  border-radius:50%;
+  transform:rotate(-8deg);
+}
+.redpacket:after{
+  content:"福";
+  position:absolute;
+  width:105px;height:105px;
+  border-radius:50%;
+  background:#ffd85a;
+  color:#b40028;
+  display:flex;align-items:center;justify-content:center;
+  font-size:58px;font-weight:900;
+  border:6px solid #f4b82d;
+  top:50%;left:50%;transform:translate(-50%,-50%);
+}
+.packet-text{
+  position:absolute;top:12%;left:0;right:0;text-align:center;
+  color:#ffd85a;font-size:34px;font-weight:900;z-index:2;
+}
+.packet-bottom{
+  position:absolute;bottom:10%;left:0;right:0;text-align:center;
+  color:#fff3b0;font-size:20px;font-weight:700;z-index:2;
+}
+@keyframes packetIn{
+  from{opacity:0;transform:scale(.55) rotate(-5deg)}
+  to{opacity:1;transform:scale(1) rotate(0)}
+}
+
+@media(max-width:700px){
+  h1{font-size:25px}
+  .songs{grid-template-columns:repeat(2,1fr);gap:10px}
+  .song-btn{font-size:16px;padding:20px 10px;min-height:82px}
+  .help-btn{min-width:120px;font-size:15px;padding:12px 14px}
+  .outside-choice{font-size:28px;min-height:130px}
+  .redpacket-modal{width:80vw;height:60vh}
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+  <h1>💍 Groom's team Million Singer 🎤</h1>
+  <div class="subtitle">接亲版 · 听歌猜歌词</div>
+
+  <div class="help-tools">
+    <button class="help-btn" id="singerHintBtn" onclick="showSingerHint()">🎤 提示歌手</button>
+    <button class="help-btn" id="outsideHelpBtn" onclick="openOutsideHelp()">📞 场外求助</button>
+    <button class="help-btn" id="sisterHelpBtn" onclick="openRedPacket()">🧧 收买姐妹</button>
+  </div>
+
+  <div class="songs" id="songButtons"></div>
+
+  <div class="card">
+    <div id="warning" class="warning" style="display:none"></div>
+    <div class="song-title" id="songTitle">请选择歌曲</div>
+    <div id="player"></div>
+    <div id="status"></div>
+  </div>
+
+  <div class="card">
+    <div class="prompt" id="prompt">请先选择一首歌</div>
+    <input id="answerInput" type="text" placeholder="请输入你认为的下一句歌词" disabled>
+    <div class="controls">
+      <button class="action" id="checkBtn" onclick="checkAnswer()" disabled>✅ 检查答案</button>
+    </div>
+    <div class="answer" id="answerBox"></div>
+  </div>
+</div>
+
+<!-- 场外求助：整页变灰，只留下两个超大选项 -->
+<div class="overlay" id="outsideOverlay" onclick="closeOutsideHelp(event)">
+  <div class="outside-modal">
+    <button class="outside-choice" onclick="chooseOutsideHelp(event,'📞 打电话 30 秒')">📞 打电话 30 秒</button>
+    <button class="outside-choice" onclick="chooseOutsideHelp(event,'🙋 现场求助')">🙋 现场求助</button>
+    <div class="modal-note">点击空白处关闭</div>
+  </div>
+</div>
+
+<!-- 收买姐妹：红包覆盖约 60% 屏幕 -->
+<div class="overlay" id="packetOverlay" onclick="closeRedPacket(event)">
+  <div class="redpacket-modal">
+    <div class="redpacket">
+      <div class="packet-text">🧧 收买姐妹 🧧</div>
+      <div class="packet-bottom">红包拿来！</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   ★★★ 歌曲资料区：以后只需要修改这里 ★★★
+   ========================================================= */
+const SONGS = [
+  {
+    title:"第一首｜Let’s dance",
+    artist:"陈小云",
+    youtubeId:"dJ89kfL62Ak",
+    startAt:0,
+    stopAt:32,
+    verifySeconds:9,
+    prompt:"请接下一句：____",
+    answer:"愛情的恰恰抹當放沒記 心愛的在叼位"
+  },
+  {
+    title:"第二首｜逃不掉了",
+    artist:"陈小春",
+    youtubeId:"KVKyen5-8k",
+    startAt:13,
+    stopAt:52,
+    verifySeconds:9,
+    prompt:"请接下一句：____",
+    answer:"與你永遠亦連在一起"
+  },
+  {
+    title:"第三首｜How dare you look at others",
+    artist:"Frankie Valli",
+    youtubeId:"ZWrhh8iMvhE",
+    startAt:0,
+    stopAt:15,
+    verifySeconds:10,
+    prompt:"请接下一句：____",
+    answer:"You're just too good to be true Can't take my eyes off of you"
+  },
+  {
+    title:"第四首｜Swamped in love",
+    artist:"莫文蔚",
+    youtubeId:"KQXHU3Clk4A",
+    startAt:38,
+    stopAt:76,
+    verifySeconds:15,
+    prompt:"请接下一句：____",
+    answer:"慢慢的親密 慢慢聊自己 慢慢和你走在一起 慢慢我想配合你 慢慢把我給你"
+  },
+  {
+    title:"第五首｜美国爱情故事",
+    artist:"Taylor Swift",
+    youtubeId:"KrsqPE9SMxo",
+    startAt:81,
+    stopAt:108,
+    verifySeconds:25,
+    prompt:"请接下一句：____",
+    answer:"But you were everything to me I was begging you, \"Please, don't go,\" and I said"
+  },
+  {
+    title:"第六首｜Sue the balloon",
+    artist:"周杰伦",
+    youtubeId:"QpZMtifpW9w",
+    startAt:24,
+    stopAt:64,
+    verifySeconds:10,
+    prompt:"请接下一句：____",
+    answer:"亲爱的 爱上你 从那天起 甜蜜的很轻易"
+  },
+  {
+    title:"第七首｜2026 All In 赌完！",
+    artist:"Bruno Mars",
+    youtubeId:"nNJkh92SwUk",
+    startAt:0,
+    stopAt:43,
+    verifySeconds:22,
+    prompt:"请接下一句：____",
+    answer:"Say you want the moon Watch me learn to fly"
+  },
+  {
+    title:"第八首｜初恋warning",
+    artist:"Hikaru Utada",
+    youtubeId:"jhrhHtFfIgs",
+    startAt:24,
+    stopAt:60,
+    verifySeconds:22,
+    prompt:"请接下一句：____",
+    answer:"Ah~ You are always gonna be my love Itsuka darekato mata koi ni ochitemo"
+  },
+  {
+    title:"第九首｜不是普通爱情",
+    artist:"Siti Nurhaliza",
+    youtubeId:"D5Z05NuMOjQ",
+    startAt:37,
+    stopAt:55,
+    verifySeconds:19,
+    prompt:"请接下一句：____",
+    answer:"Cintaku bukan di atas kertas, cintaku getaran yang sama"
+  },
+  {
+    title:"第十首｜100%",
+    artist:"Ed Sheeran",
+    youtubeId:"hIvcu6291ik",
+    startAt:0,
+    stopAt:36,
+    verifySeconds:13,
+    prompt:"请接下一句：____",
+    answer:"Not knowin' what it was I will not give you up this time"
+  },
+  {
+    title:"第十一首｜The universe",
+    artist:"GUMMY",
+    youtubeId:"EHB1aVFWOk0",
+    startAt:42,
+    stopAt:77,
+    verifySeconds:20,
+    prompt:"请接下一句：____",
+    answer:"byol cho rom so da ji nun un myong e, gu de ra nun sa ram ul man na go"
+  },
+  {
+    title:"第十二首｜Love declaration",
+    artist:"Pakho Chau",
+    youtubeId:"yFW_eFQH8Tg",
+    startAt:35,
+    stopAt:63,
+    verifySeconds:22,
+    prompt:"请接下一句：____",
+    answer:"只知道是時候拿着鮮花 將心愛預留在盟誓之下"
+  }
+];
+
+let player = null;
+let selectedIndex = null;
+let selectedSong = null;
+let timer = null;
+let stoppedAt = null;
+let singerHintUsed = false;
+
+function onYouTubeIframeAPIReady(){
+  player = new YT.Player("player",{
+    videoId:SONGS[0].youtubeId,
+    playerVars:{
+      playsinline:1,
+      rel:0
+    },
+    events:{
+      onReady:function(){
+        renderSongButtons();
+        selectSong(0);
+      }
+    }
+  });
+}
+
+function renderSongButtons(){
+  const box = document.getElementById("songButtons");
+  box.innerHTML = SONGS.map((song,i)=>`
+    <div class="song-wrap">
+      <button class="song-btn" id="songBtn${i}" onclick="selectSong(${i})">
+        ${escapeHtml(song.title)}
+      </button>
+      <div class="song-artist-hint" id="artistHint${i}"></div>
+    </div>
+  `).join("");
+}
+
+function selectSong(index){
+  clearInterval(timer);
+  selectedIndex = index;
+  selectedSong = SONGS[index];
+  stoppedAt = null;
+
+  document.querySelectorAll(".song-btn").forEach(btn=>btn.classList.remove("active"));
+  document.getElementById("songBtn"+index)?.classList.add("active");
+
+  // 歌手提示只显示在当前所选歌曲下面；提示已经用过后，不恢复按钮
+  document.querySelectorAll(".song-artist-hint").forEach(el=>{
+    el.classList.remove("show");
+    el.textContent="";
+  });
+
+  document.getElementById("songTitle").textContent = selectedSong.title;
+  document.getElementById("prompt").textContent = selectedSong.prompt;
+  document.getElementById("answerInput").value = "";
+  document.getElementById("answerBox").style.display = "none";
+  document.getElementById("status").textContent = "";
+  document.getElementById("checkBtn").disabled = false;
+  document.getElementById("answerInput").disabled = false;
+
+  const warning = document.getElementById("warning");
+
+  if(!isValidYouTubeId(selectedSong.youtubeId)){
+    warning.style.display="block";
+    warning.textContent="⚠️ 这首歌的 YouTube Video ID 看起来不完整，请确认。";
+    return;
+  }
+
+  warning.style.display="none";
+
+  // 关键修复：每次换歌都强制重新加载对应 Video ID，并在加载完成后从该歌曲 startAt 开始播放
+  if(player && typeof player.loadVideoById==="function"){
+    player.loadVideoById({
+      videoId:selectedSong.youtubeId,
+      startSeconds:selectedSong.startAt
+    });
+    document.getElementById("status").textContent="🎵 切换歌曲中……";
+  }
+}
+
+function startMonitoring(){
+  clearInterval(timer);
+  timer=setInterval(()=>{
+    if(!player || !selectedSong) return;
+    const current=player.getCurrentTime();
+    if(current>=selectedSong.stopAt){
+      stopRound();
+    }
+  },200);
+}
+
+function stopRound(){
+  if(!selectedSong || !player) return;
+  clearInterval(timer);
+  stoppedAt=selectedSong.stopAt;
+  player.pauseVideo();
+  player.seekTo(selectedSong.stopAt,true);
+  document.getElementById("status").textContent="⏸ 停！请接歌词！";
+}
+
+function verify(){
+  if(!selectedSong || !player) return;
+
+  clearInterval(timer);
+  const from = stoppedAt !== null ? stoppedAt : selectedSong.stopAt;
+  player.seekTo(from,true);
+  player.playVideo();
+  document.getElementById("status").textContent="🎶 验证播放中……";
+
+  timer=setInterval(()=>{
+    if(!player || !selectedSong) return;
+    if(player.getCurrentTime() >= from + selectedSong.verifySeconds){
+      clearInterval(timer);
+      player.pauseVideo();
+      document.getElementById("status").textContent="⏸ 验证结束！";
+    }
+  },200);
+}
+
+function checkAnswer(){
+  if(!selectedSong) return;
+
+  const userAnswer=normalize(document.getElementById("answerInput").value);
+  const correctAnswer=normalize(selectedSong.answer);
+  const correct=!!userAnswer && (
+    userAnswer===correctAnswer ||
+    correctAnswer.includes(userAnswer) ||
+    userAnswer.includes(correctAnswer)
+  );
+
+  document.getElementById("status").textContent=correct ? "🎉 答对了！" : "😈 再接再厉！";
+
+  const box=document.getElementById("answerBox");
+  box.textContent="正确答案："+selectedSong.answer;
+  box.style.display="block";
+
+  // 检查答案后自动播放验证
+  verify();
+}
+
+/* ===== 提示歌手：一次性使用 ===== */
+function showSingerHint(){
+  if(singerHintUsed || selectedIndex===null) return;
+
+  const el=document.getElementById("artistHint"+selectedIndex);
+  el.textContent="🎤 "+selectedSong.artist;
+  el.classList.add("show");
+
+  singerHintUsed=true;
+  document.getElementById("singerHintBtn").classList.add("used");
+}
+
+/* ===== 场外求助：全屏灰幕 + 超大选项 ===== */
+function openOutsideHelp(){
+  const overlay=document.getElementById("outsideOverlay");
+  overlay.classList.add("show");
+  document.body.classList.add("modal-open");
+}
+
+function closeOutsideHelp(event){
+  if(event.target===event.currentTarget){
+    document.getElementById("outsideOverlay").classList.remove("show");
+    document.body.classList.remove("modal-open");
+  }
+}
+
+function chooseOutsideHelp(event,text){
+  event.stopPropagation();
+  document.getElementById("status").textContent=text+" 已使用";
+  // 选择后仍保留两个大选项，方便游戏主持人让玩家继续选择；
+  // 点击灰色空白区域才关闭。
+}
+
+/* ===== 收买姐妹：红包覆盖约 60% 屏幕 ===== */
+function openRedPacket(){
+  document.getElementById("packetOverlay").classList.add("show");
+  document.body.classList.add("modal-open");
+}
+
+function closeRedPacket(event){
+  if(event.target===event.currentTarget){
+    document.getElementById("packetOverlay").classList.remove("show");
+    document.body.classList.remove("modal-open");
+  }
+}
+
+function normalize(text){
+  return text.toLowerCase()
+    .replace(/[\s，。！？、,.!?"“”‘’：:；;]/g,"")
+    .trim();
+}
+
+function isValidYouTubeId(id){
+  return /^[A-Za-z0-9_-]{11}$/.test(id);
+}
+
+function escapeHtml(text){
+  return text.replace(/[&<>"']/g,m=>({
+    "&":"&amp;",
+    "<":"&lt;",
+    ">":"&gt;",
+    '"':"&quot;",
+    "'":"&#039;"
+  }[m]));
+}
+</script>
+
+<script src="https://www.youtube.com/iframe_api"></script>
+</body>
+</html>
